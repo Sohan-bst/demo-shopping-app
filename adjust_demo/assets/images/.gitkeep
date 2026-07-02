@@ -1,0 +1,3 @@
+# Placeholder so Flutter's asset bundler accepts this directory.
+# Product/illustration imagery in this demo is drawn procedurally in-code
+# (see lib/widgets/product_image.dart), so no binary assets are required.

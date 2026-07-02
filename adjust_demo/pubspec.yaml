@@ -1,0 +1,48 @@
+name: adjust_demo
+description: "A modern Flutter demo e-commerce application for testing features, user flows and SDK integrations."
+# Prevent accidental publishing to pub.dev.
+publish_to: 'none'
+
+# App version + build number (versionName / versionCode on Android).
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.12.2
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # iOS-style icons (used sparingly alongside Material icons).
+  cupertino_icons: ^1.0.8
+
+  # State management.
+  provider: ^6.1.2
+
+  # Declarative routing with guards/redirects.
+  go_router: ^14.6.2
+
+  # Local key/value persistence (auth, cart, wishlist, orders, settings).
+  shared_preferences: ^2.3.3
+
+  # Unique id generation (orders, cart lines, users).
+  uuid: ^4.5.1
+
+  # HTTP client used by the (swappable) analytics layer to POST demo events to
+  # a configurable endpoint. Replaced by the Adjust SDK's own transport later.
+  http: ^1.2.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  # Recommended lint rules for Flutter apps.
+  flutter_lints: ^6.0.0
+
+flutter:
+  # Bundle the Material Icons font.
+  uses-material-design: true
+
+  # Local placeholder assets (SVG-free; generated illustrations/logos).
+  assets:
+    - assets/images/
