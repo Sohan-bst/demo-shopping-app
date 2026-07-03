@@ -32,4 +32,26 @@ class FakeAnalytics implements AnalyticsService {
       },
     ));
   }
+
+  @override
+  Future<void> logAdRevenue({
+    required String source,
+    required double revenue,
+    required String currency,
+    String? network,
+    String? unit,
+    String? placement,
+  }) async {
+    events.add((
+      name: AnalyticsEvents.adRevenue,
+      params: {
+        'source': source,
+        'revenue': revenue,
+        'currency': currency,
+        'network': network,
+        'unit': unit,
+        'placement': placement,
+      },
+    ));
+  }
 }

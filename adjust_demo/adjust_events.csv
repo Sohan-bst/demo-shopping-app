@@ -1,0 +1,13 @@
+name,unique
+appOpened,false
+login,false
+register,true
+logout,false
+search,false
+viewProduct,false
+addToCart,false
+removeFromCart,false
+addToWishlist,false
+removeFromWishlist,false
+beginCheckout,false
+purchase,false

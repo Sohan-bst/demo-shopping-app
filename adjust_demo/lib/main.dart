@@ -10,16 +10,16 @@ import 'providers/theme_provider.dart';
 import 'providers/wishlist_provider.dart';
 import 'repository/auth_repository.dart';
 import 'repository/product_repository.dart';
+import 'services/analytics/adjust_analytics_service.dart';
 import 'services/analytics/analytics_service.dart';
-import 'services/analytics/http_analytics_service.dart';
 import 'services/storage_service.dart';
 
 /// Application entry point.
 ///
 /// Initializes local storage + the analytics layer, wires up repositories and
-/// providers, then runs the app. Everything is local/offline; the analytics
-/// layer POSTs demo events to a configurable endpoint (see
-/// `constants/analytics_config.dart`) for inspection in Postman.
+/// providers, then runs the app. All app data is local/offline; user events
+/// are forwarded to Adjust via [AdjustAnalyticsService] (configure tokens in
+/// `constants/adjust_config.dart`).
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -28,11 +28,10 @@ Future<void> main() async {
   const productRepo = ProductRepository();
 
   // ── Analytics backend ──────────────────────────────────────────────────
-  // Swap this single line to switch backends. Today: HTTP (Postman-testable).
-  // Later, once the Adjust SDK is added:
-  //   final AnalyticsService analytics = AdjustAnalyticsService();
-  final AnalyticsService analytics = HttpAnalyticsService();
-  await analytics.init(); // fires `app_opened`
+  // The whole app depends only on the AnalyticsService interface, so the
+  // backend is chosen here in one place.
+  final AnalyticsService analytics = AdjustAnalyticsService();
+  await analytics.init(); // boots the Adjust SDK + fires `app_opened`
 
   runApp(
     MultiProvider(

@@ -18,6 +18,7 @@ class AnalyticsEvents {
   static const String removeFromWishlist = 'remove_from_wishlist';
   static const String beginCheckout = 'begin_checkout';
   static const String purchase = 'purchase';
+  static const String adRevenue = 'ad_revenue';
 }
 
 /// A single analytics/attribution backend.
@@ -43,5 +44,19 @@ abstract interface class AnalyticsService {
     required String currency,
     required String orderId,
     Map<String, Object?> params,
+  });
+
+  /// Records in-app **ad revenue** (e.g. a rewarded video the user watched).
+  ///
+  /// [source] is the ad-revenue source string Adjust expects (e.g.
+  /// `admob_sdk`, `applovin_max_sdk`). [network]/[unit]/[placement] describe the
+  /// ad; [revenue]/[currency] are the earnings for showing it.
+  Future<void> logAdRevenue({
+    required String source,
+    required double revenue,
+    required String currency,
+    String? network,
+    String? unit,
+    String? placement,
   });
 }

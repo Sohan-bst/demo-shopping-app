@@ -170,11 +170,12 @@ lib/
 | `go_router` | Declarative routing with auth guards/redirects |
 | `shared_preferences` | Local key/value persistence |
 | `uuid` | Unique id generation (users, orders, cart lines) |
-| `http` | HTTP client for the swappable analytics layer (demo events) |
+| `adjust_sdk` | Attribution/analytics SDK — receives the app's user events |
 | `cupertino_icons` | iOS-style icons |
 | `flutter_lints` | Recommended lint rules (dev) |
 
-No networking, backend, or analytics packages are included by design.
+The only outbound integration is Adjust (attribution). There is still no
+backend, REST API, or cloud database for the app's own data.
 
 ---
 
@@ -207,13 +208,78 @@ flutter test
 
 ---
 
+## Analytics / Adjust integration
+
+User events are routed through a single `AnalyticsService` interface
+(`lib/services/analytics/`). The active backend is `AdjustAnalyticsService`,
+which forwards events to the **Adjust SDK v5**. Because the app depends only on
+the interface, the backend is chosen in one place (`main.dart`).
+
+### Configure your tokens
+
+All Adjust configuration lives in **`lib/constants/adjust_config.dart`**:
+
+1. Set `appToken` to your Adjust app token (Dashboard → Settings → App info).
+2. Fill in `eventTokens` — one Adjust event token per app event. Events left as
+   `CHANGE_ME_*` (or removed from the map) are simply **skipped**, so you can
+   enable them incrementally.
+3. Keep `environment = AdjustEnvironment.sandbox` while testing (events appear
+   in the dashboard **Testing Console**); switch to `production` for release.
+
+> The app token and event tokens are public identifiers (they ship inside every
+> build), so keeping them in source is standard and safe — the client SDK has no
+> secret key.
+
+### Events fired
+
+`app_opened`, `login`, `register`, `logout`, `search`, `view_product`,
+`add_to_cart`, `remove_from_cart`, `add_to_wishlist`, `remove_from_wishlist`,
+`begin_checkout`, `purchase` (with revenue + currency + order id). Each is fired
+from the relevant provider/screen — see `lib/services/analytics/`.
+
+There is also an **ad-revenue** path: the Home screen's "Earn 50 coins / Watch"
+card simulates a rewarded video and calls `AnalyticsService.logAdRevenue`, which
+forwards to Adjust's `AdjustAdRevenue` API (source/network/unit + revenue). This
+is sample/demo data — no real ad network is integrated — so Adjust's Monetization
+reporting can be exercised.
+
+### Verifying
+
+Set `logLevel = AdjustLogLevel.verbose`. Every event is also mirrored to the
+console as `📊 analytics » <event> {...}`:
+
+```bash
+flutter logs            # or: adb logcat -s flutter Adjust
+```
+
+With a real token, Adjust's SDK logs session/event tracking; confirm delivery in
+the Adjust dashboard's Testing Console (sandbox).
+
+### Android setup (done)
+
+- `INTERNET`, `AD_ID`, `ACCESS_NETWORK_STATE` permissions in the manifest.
+- `play-services-ads-identifier` + `installreferrer` in `app/build.gradle.kts`.
+- `proguard-rules.pro` keep-rules for release (R8) builds.
+
+### iOS setup (when you add the iOS platform)
+
+This project currently has **only the Android platform**. If you run
+`flutter create --platforms=ios .` to add iOS, also:
+
+- In `ios/Runner/Info.plist`, add `NSUserTrackingUsageDescription` (ATT prompt
+  copy) if you enable IDFA/ATT.
+- Link `AdSupport`, `AdServices`, `StoreKit`, `AppTrackingTransparency`
+  frameworks (Adjust's pod pulls these in automatically via CocoaPods).
+- Run `cd ios && pod install`.
+
+---
+
 ## Future Improvements
 
-- Integrate an attribution/analytics SDK (e.g. Adjust) and fire events from the
-  existing provider mutations (login, add-to-cart, checkout, purchase, …).
+- Create the real Adjust event tokens and paste them into `adjust_config.dart`.
+- Add the iOS platform and verify the Adjust build on macOS.
 - Add integration/golden tests for key flows.
 - Optional localization (strings are already centralized in `app_strings`).
-- Richer product media and real product imagery.
 
 ---
 

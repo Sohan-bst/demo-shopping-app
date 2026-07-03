@@ -1,61 +1,73 @@
+import 'package:adjust_sdk/adjust.dart';
+import 'package:adjust_sdk/adjust_ad_revenue.dart';
+import 'package:adjust_sdk/adjust_config.dart';
+import 'package:adjust_sdk/adjust_event.dart';
 import 'package:flutter/foundation.dart';
 
+import '../../constants/adjust_config.dart';
 import 'analytics_service.dart';
 
-/// Adjust SDK implementation of [AnalyticsService] — **STUB / NOT YET WIRED**.
+/// [AnalyticsService] backed by the Adjust SDK (v5).
 ///
-/// This is the drop-in replacement for [HttpAnalyticsService] to use once you
-/// have an Adjust account. Because the whole app depends only on the
-/// [AnalyticsService] interface, switching is a ONE-LINE change in `main.dart`:
+/// Forwards the app's canonical events to Adjust: [init] boots the SDK,
+/// [logEvent] tracks a mapped event with its params as callback parameters,
+/// and [logPurchase] additionally attaches revenue.
 ///
-///   // final AnalyticsService analytics = HttpAnalyticsService();
-///   final AnalyticsService analytics = AdjustAnalyticsService();
-///
-/// No provider or screen code changes — the event names and call sites stay
-/// exactly the same.
-///
-/// ── To activate ────────────────────────────────────────────────────────────
-/// 1. Add the SDK to pubspec.yaml:      adjust_sdk: ^5.x.x
-/// 2. Fill in [_appToken] below and the [_eventTokens] map with the event
-///    tokens created in your Adjust dashboard.
-/// 3. Uncomment the `import 'package:adjust_sdk/...';` lines and the SDK calls
-///    marked `// ADJUST:` below.
-/// ────────────────────────────────────────────────────────────────────────────
+/// Configuration (app token, environment, per-event tokens) lives in
+/// [AdjustSettings]. Events whose token is unmapped or still a placeholder are
+/// skipped, so partial dashboard setup never breaks the app. Every call is
+/// also mirrored to the debug console (`📊 analytics » …`) for easy local
+/// verification, and never throws — analytics must not disrupt a user action.
 class AdjustAnalyticsService implements AnalyticsService {
-  // TODO(adjust): paste your Adjust app token here.
-  static const String _appToken = 'YOUR_ADJUST_APP_TOKEN';
-
-  // TODO(adjust): map each canonical event name (AnalyticsEvents.*) to the
-  // event token generated in the Adjust dashboard.
-  static const Map<String, String> _eventTokens = {
-    // AnalyticsEvents.login:      'abc123',
-    // AnalyticsEvents.addToCart:  'def456',
-    // AnalyticsEvents.purchase:   'ghi789',
-  };
+  bool _initialized = false;
 
   @override
   Future<void> init() async {
-    // ADJUST: initialize the SDK once at startup.
-    //
-    // final config = AdjustConfig(_appToken, AdjustEnvironment.sandbox);
-    // Adjust.initSdk(config);
-    debugPrint(
-      '⚠️ AdjustAnalyticsService is a stub. Add the adjust_sdk package, set '
-      'the app token ($_appToken) and event tokens, then uncomment the SDK '
-      'calls. Using it now is a no-op.',
-    );
+    if (AdjustSettings.isAppTokenPlaceholder) {
+      debugPrint(
+        '⚠️ Adjust app token is still the placeholder. Set AdjustSettings.'
+        'appToken (and event tokens) — the SDK will init but events without a '
+        'real token are skipped.',
+      );
+    }
+
+    try {
+      final config = AdjustConfig(
+        AdjustSettings.appToken,
+        AdjustSettings.environment,
+      )..logLevel = AdjustSettings.logLevel;
+
+      Adjust.initSdk(config);
+      _initialized = true;
+      debugPrint('📊 analytics » Adjust SDK initialized '
+          '(${AdjustSettings.environment.name})');
+    } catch (e) {
+      debugPrint('⚠️ Adjust init failed: $e');
+    }
+
+    // The SDK tracks the session automatically; mirror an app_opened marker.
+    await logEvent(AnalyticsEvents.appOpened);
   }
 
   @override
-  Future<void> logEvent(String name, {Map<String, Object?> params = const {}}) async {
-    final token = _eventTokens[name];
-    if (token == null) return; // No token mapped for this event.
+  Future<void> logEvent(
+    String name, {
+    Map<String, Object?> params = const {},
+  }) async {
+    if (AdjustSettings.logLevel == AdjustLogLevel.verbose) {
+      debugPrint('📊 analytics » $name $params');
+    }
 
-    // ADJUST: build and track the event.
-    //
-    // final event = AdjustEvent(token);
-    // params.forEach((k, v) => event.addCallbackParameter(k, '$v'));
-    // Adjust.trackEvent(event);
+    final token = AdjustSettings.tokenFor(name);
+    if (token == null || !_initialized) return; // unmapped/placeholder → skip
+
+    try {
+      final event = AdjustEvent(token);
+      _attach(event, params);
+      Adjust.trackEvent(event);
+    } catch (e) {
+      debugPrint('⚠️ Adjust trackEvent("$name") failed: $e');
+    }
   }
 
   @override
@@ -65,14 +77,57 @@ class AdjustAnalyticsService implements AnalyticsService {
     required String orderId,
     Map<String, Object?> params = const {},
   }) async {
-    // ADJUST: revenue event.
-    //
-    // final token = _eventTokens[AnalyticsEvents.purchase];
-    // if (token == null) return;
-    // final event = AdjustEvent(token)
-    //   ..setRevenue(revenue, currency)
-    //   ..addCallbackParameter('order_id', orderId);
-    // params.forEach((k, v) => event.addCallbackParameter(k, '$v'));
-    // Adjust.trackEvent(event);
+    if (AdjustSettings.logLevel == AdjustLogLevel.verbose) {
+      debugPrint('📊 analytics » purchase '
+          '{revenue: $revenue $currency, order: $orderId, $params}');
+    }
+
+    final token = AdjustSettings.tokenFor(AnalyticsEvents.purchase);
+    if (token == null || !_initialized) return;
+
+    try {
+      final event = AdjustEvent(token)
+        ..setRevenue(revenue, currency)
+        ..addCallbackParameter('order_id', orderId);
+      _attach(event, params);
+      Adjust.trackEvent(event);
+    } catch (e) {
+      debugPrint('⚠️ Adjust purchase event failed: $e');
+    }
+  }
+
+  @override
+  Future<void> logAdRevenue({
+    required String source,
+    required double revenue,
+    required String currency,
+    String? network,
+    String? unit,
+    String? placement,
+  }) async {
+    if (AdjustSettings.logLevel == AdjustLogLevel.verbose) {
+      debugPrint('📊 analytics » ad_revenue '
+          '{source: $source, revenue: $revenue $currency, network: $network}');
+    }
+
+    if (!_initialized) return;
+
+    try {
+      final adRevenue = AdjustAdRevenue(source)
+        ..setRevenue(revenue, currency);
+      if (network != null) adRevenue.adRevenueNetwork = network;
+      if (unit != null) adRevenue.adRevenueUnit = unit;
+      if (placement != null) adRevenue.adRevenuePlacement = placement;
+      Adjust.trackAdRevenue(adRevenue);
+    } catch (e) {
+      debugPrint('⚠️ Adjust ad revenue failed: $e');
+    }
+  }
+
+  /// Adjust callback parameters are string key/values; stringify each param.
+  void _attach(AdjustEvent event, Map<String, Object?> params) {
+    params.forEach((key, value) {
+      if (value != null) event.addCallbackParameter(key, '$value');
+    });
   }
 }

@@ -43,3 +43,10 @@ kotlin {
 flutter {
     source = "../.."
 }
+
+dependencies {
+    // Adjust SDK attribution helpers: Google advertising id + Play install
+    // referrer. Required for correct attribution on Android.
+    implementation("com.google.android.gms:play-services-ads-identifier:18.1.0")
+    implementation("com.android.installreferrer:installreferrer:2.2")
+}

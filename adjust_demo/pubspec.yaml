@@ -28,9 +28,9 @@ dependencies:
   # Unique id generation (orders, cart lines, users).
   uuid: ^4.5.1
 
-  # HTTP client used by the (swappable) analytics layer to POST demo events to
-  # a configurable endpoint. Replaced by the Adjust SDK's own transport later.
-  http: ^1.2.2
+  # Adjust attribution/analytics SDK. The app's AnalyticsService is implemented
+  # by AdjustAnalyticsService, which forwards events to this SDK.
+  adjust_sdk: ^5.6.2
 
 dev_dependencies:
   flutter_test:

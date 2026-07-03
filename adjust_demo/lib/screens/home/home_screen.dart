@@ -12,6 +12,7 @@ import '../../widgets/category_tile.dart';
 import '../../widgets/product_card.dart';
 import '../../widgets/search_field.dart';
 import '../../widgets/section_header.dart';
+import '../../widgets/watch_ad_card.dart';
 
 /// The store landing screen (Home tab).
 ///
@@ -72,6 +73,19 @@ class HomeScreen extends StatelessWidget {
                       ),
                     ],
                   ),
+                ),
+              ),
+
+              // ---- Rewarded ad (fires Adjust ad-revenue) ------------------
+              const SliverToBoxAdapter(
+                child: Padding(
+                  padding: EdgeInsets.fromLTRB(
+                    AppSizes.lg,
+                    AppSizes.sm,
+                    AppSizes.lg,
+                    0,
+                  ),
+                  child: WatchAdCard(),
                 ),
               ),
 
