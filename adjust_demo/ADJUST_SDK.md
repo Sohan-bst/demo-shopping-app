@@ -3,8 +3,10 @@
 This document explains how the [Adjust](https://www.adjust.com/) mobile attribution & analytics SDK is integrated into this app, what it currently tracks, how to verify it's working, and what else you'd typically add for a real production app.
 
 - **App:** Nova Store (Flutter e-commerce demo), package `com.example.adjustdemo`
+- **GitHub repo:** https://github.com/Sohan-bst/demo-shopping-app
 - **Adjust dashboard:** https://suite.adjust.com/datascape/custom-dashboard?custom_dashboard_id=affd779e-9ea4-482a-86d9-6a4b1e9e517c
 - **Demo APK:** https://drive.google.com/drive/folders/1_dEetdohn3j_5Hzht1ka7_XRd8X0D0wG?usp=sharing
+- **Adjust custom tracking link (campaign `Sohan`):** https://app.adjust.com/22979gul?campaign=Sohan&redirect=https%3A%2F%2Fdrive.google.com%2Fdrive%2Ffolders%2F1_dEetdohn3j_5Hzht1ka7_XRd8X0D0wG%3Fusp%3Dsharing
 
 ---
 
@@ -219,7 +221,32 @@ Practical implications:
 
 ---
 
-## 7. File reference
+## 7. Campaign attribution — custom tracking link
+
+Everything above covers **event tracking** (what users do *after* install). The other half of what Adjust does is **attribution** — knowing *which ad/campaign drove an install*. That's demonstrated with a **custom tracking link**.
+
+**This app's custom link (campaign = `Sohan`):**
+```
+https://app.adjust.com/22979gul?campaign=Sohan&redirect=https%3A%2F%2Fdrive.google.com%2Fdrive%2Ffolders%2F1_dEetdohn3j_5Hzht1ka7_XRd8X0D0wG%3Fusp%3Dsharing
+```
+
+**How it works:**
+1. The link was created in the Adjust dashboard under **Campaign Lab → Custom links**, with campaign name `Sohan`.
+2. `?campaign=Sohan` labels any install/click that comes through this link.
+3. `&redirect=…` sends the person to the Demo APK Drive folder after the click is registered (normally this would redirect to the Play Store).
+
+**What it demonstrates:** when someone clicks this link and then installs + opens the app, Adjust matches the click to the install (via the advertising ID / install referrer, within the attribution window) and attributes that install to **campaign `Sohan`** instead of **Organic**. In the Testing Console / reports, the device's **Network / Campaign** fields then show `Sohan` rather than `Organic`.
+
+**How to create your own** (for reference): **Campaign Lab → Custom links → New link → pick the app → set Network/Campaign/Adgroup/Creative labels → Save** → copy the generated `https://app.adjust.com/xxxxx` URL.
+
+**Caveats for this demo:**
+- A plain install (e.g. sideloading the APK directly, or `adb install`) is **not** attributed to the link — it shows as **Organic**. Attribution only happens when the install follows a **click on the link**.
+- The full, clean flow assumes the app is on the Play Store (link → Play Store → install → attribution). Since this demo APK is distributed via Drive (not published), attribution matching is best-effort; on a real published app it is exact.
+- Attribution, like other production data, is subject to the dashboard delay described in §6.
+
+---
+
+## 8. File reference
 
 | File | Purpose |
 |---|---|
@@ -238,7 +265,9 @@ Practical implications:
 
 ---
 
-## 8. Links
+## 9. Links
 
+- GitHub repo: https://github.com/Sohan-bst/demo-shopping-app
 - Adjust dashboard (this app's custom dashboard): https://suite.adjust.com/datascape/custom-dashboard?custom_dashboard_id=affd779e-9ea4-482a-86d9-6a4b1e9e517c
 - Demo APK: https://drive.google.com/drive/folders/1_dEetdohn3j_5Hzht1ka7_XRd8X0D0wG?usp=sharing
+- Adjust custom tracking link (campaign `Sohan`): https://app.adjust.com/22979gul?campaign=Sohan&redirect=https%3A%2F%2Fdrive.google.com%2Fdrive%2Ffolders%2F1_dEetdohn3j_5Hzht1ka7_XRd8X0D0wG%3Fusp%3Dsharing
