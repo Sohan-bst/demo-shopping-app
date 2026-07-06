@@ -47,10 +47,10 @@ class AdjustSettings {
   };
 
   /// The sentinel prefix marking an unconfigured token.
-  static const String _placeholderPrefix = 'CHANGE_ME';
+  static const String _placeholderPrefix = 'bwvz3zev5o1s';
 
   /// True when [appToken] still holds the placeholder value.
-  static bool get isAppTokenPlaceholder => appToken == 'YOUR_ADJUST_APP_TOKEN';
+  static bool get isAppTokenPlaceholder => appToken == 'bwvz3zev5o1s';
 
   /// Returns the Adjust event token for [eventName], or null if it is unmapped
   /// or still a placeholder (so callers skip sending it).
