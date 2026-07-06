@@ -19,8 +19,18 @@ class AdjustSettings {
   static const String appToken = 'bwvz3zev5o1s';
 
   /// Environment. `production` sends data to the live Datascape dashboards /
-  /// Insights (with processing lag). Use `sandbox` for the Testing Console.
-  static const AdjustEnvironment environment = AdjustEnvironment.production;
+  /// Insights (with processing lag). `sandbox` goes to the Testing Console.
+  ///
+  /// Controlled at build time via `--dart-define=ADJUST_ENV=production`;
+  /// defaults to `sandbox` when the flag isn't passed, e.g.:
+  ///   flutter build apk --release --dart-define=ADJUST_ENV=production
+  static const String _envFlag = String.fromEnvironment(
+    'ADJUST_ENV',
+    defaultValue: 'sandbox',
+  );
+  static const AdjustEnvironment environment = _envFlag == 'production'
+      ? AdjustEnvironment.production
+      : AdjustEnvironment.sandbox;
 
   /// Verbose while integrating so events are visible in logcat. For an actual
   /// public release, set this to [AdjustLogLevel.suppress].
